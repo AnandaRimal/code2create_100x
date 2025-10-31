@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'shop.dart';
+import 'login.dart';
 
 void main() {
   runApp(MyRootApp());
@@ -15,7 +16,7 @@ class MyRootApp extends StatelessWidget {
         primaryColor: Color(0xFF1E88E5),
         fontFamily: 'Roboto',
       ),
-      home: NepalShopApp(),  // Always start at shop
+      home: LoginPage(),  // Always start at login
       debugShowCheckedModeBanner: false,
     );
   }

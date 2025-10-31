@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'dart:math';
-// import 'screens/dashboard_page.dart'; // TODO: Create dashboard page
+import 'screens/dashboard_page.dart';
 
 void main() {
   runApp(NepalShopApp());
@@ -550,19 +550,18 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
         backgroundColor: Color(0xFF1E88E5),
         elevation: 8,
         actions: [
-          // TODO: Uncomment when dashboard page is created
-          // IconButton(
-          //   icon: Icon(Icons.dashboard, color: Colors.white),
-          //   tooltip: "ड्यासबोर्ड",
-          //   onPressed: () {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(
-          //         builder: (context) => DashboardPage(products: _products, sales: _sales),
-          //       ),
-          //     );
-          //   },
-          // ),
+          IconButton(
+            icon: Icon(Icons.dashboard, color: Colors.white),
+            tooltip: "ड्यासबोर्ड",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DashboardPage(products: _products, sales: _sales),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(Icons.analytics, color: Colors.white),
             tooltip: "विश्लेषण",

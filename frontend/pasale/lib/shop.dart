@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'dart:math';
+import 'package:permission_handler/permission_handler.dart';
 import 'screens/dashboard_page.dart';
 
 void main() {
@@ -281,34 +282,63 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
   // --- MIC FUNCTION WITH POPUP ---
   void _listenVoice() async {
     if (!_isListening) {
-      bool available = await _speech.initialize(
-        onStatus: (val) {
-          if (val == 'done' || val == 'notListening') {
+      // Request microphone permission first
+      var status = await Permission.microphone.request();
+      
+      if (status.isDenied) {
+        _showSnackBar('माइक्रोफोन अनुमति आवश्यक छ! / Microphone permission required!', Colors.red);
+        return;
+      }
+      
+      if (status.isPermanentlyDenied) {
+        _showSnackBar('कृपया सेटिङमा जानुहोस् र माइक्रोफोन अनुमति दिनुहोस्! / Please enable microphone in Settings!', Colors.red);
+        openAppSettings();
+        return;
+      }
+      
+      // Only initialize if not already initialized
+      if (!_speech.isAvailable) {
+        bool available = await _speech.initialize(
+          onStatus: (val) {
+            if (val == 'done' || val == 'notListening') {
+              setState(() => _isListening = false);
+              _closeListeningDialog();
+            }
+          },
+          onError: (val) {
             setState(() => _isListening = false);
             _closeListeningDialog();
-          }
-        },
-        onError: (val) {
-          setState(() => _isListening = false);
-          _closeListeningDialog();
-          _showSnackBar('Mic error: ${val.errorMsg}', Colors.red);
-        },
-      );
-      if (available) {
-        setState(() => _isListening = true);
-        _showListeningDialog();
-        await _speech.listen(
-          localeId: 'ne_NP', // Try removing if Nepali not supported
-          onResult: (val) {
-            setState(() {
-              _searchController.text = val.recognizedWords;
-              _filterProducts();
-            });
+            _showSnackBar('Mic error: ${val.errorMsg}', Colors.red);
           },
         );
-      } else {
-        _showSnackBar('Speech recognition unavailable!', Colors.red);
+        if (!available) {
+          _showSnackBar('Speech recognition unavailable! Please check if Google app is installed.', Colors.red);
+          return;
+        }
       }
+      
+      setState(() => _isListening = true);
+      _showListeningDialog();
+      await _speech.listen(
+        localeId: 'ne_NP', // Try removing if Nepali not supported
+        onResult: (val) {
+          setState(() {
+            _searchController.text = val.recognizedWords;
+            _filterProducts();
+          });
+          
+          // Close dialog after 2 seconds of recognizing voice
+          if (val.recognizedWords.isNotEmpty) {
+            Future.delayed(Duration(seconds: 2), () async {
+              if (_isListening) {
+                setState(() => _isListening = false);
+                await _speech.stop();
+                _closeListeningDialog();
+              }
+            });
+          }
+        },
+      );
     } else {
       setState(() => _isListening = false);
       await _speech.stop();
@@ -325,9 +355,26 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
         builder: (_) => WillPopScope(
           onWillPop: () async => false,
           child: AlertDialog(
+            contentPadding: EdgeInsets.fromLTRB(24, 20, 24, 24),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.grey[600]),
+                      onPressed: () async {
+                        setState(() => _isListening = false);
+                        await _speech.stop();
+                        _closeListeningDialog();
+                      },
+                      tooltip: "बन्द गर्नुहोस्",
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                    ),
+                  ],
+                ),
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.blueGrey.shade50,

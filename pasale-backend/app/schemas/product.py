@@ -22,6 +22,7 @@ class ProductBase(BaseModel):
     category: Optional[str] = None
     price: float = Field(..., gt=0)  # Must be greater than 0
     unit: Optional[str] = Field(default="piece", max_length=50)  # piece, kg, liter, packet, etc.
+    quantity: int = Field(default=0, ge=0)  # Current stock quantity
     
     @validator('price')
     def validate_price(cls, v):
@@ -41,6 +42,7 @@ class ProductUpdate(BaseModel):
     category: Optional[str] = None
     price: Optional[float] = Field(None, gt=0)
     unit: Optional[str] = Field(None, max_length=50)
+    quantity: Optional[int] = Field(None, ge=0)  # Allow updating quantity
     
     @validator('price')
     def validate_price(cls, v):
@@ -58,9 +60,9 @@ class ProductResponse(ProductBase):
     updated_at: datetime
     version: int
     is_active: bool
-    current_stock: Optional[int] = None  # Will be populated from inventory
+    current_stock: Optional[int] = None  # Will be populated from inventory (can be synced with quantity)
     reorder_level: Optional[int] = None
-    stock_value: Optional[float] = None  # current_stock * price
+    stock_value: Optional[float] = None  # quantity * price
     
     class Config:
         from_attributes = True

@@ -7,7 +7,8 @@ from typing import Optional, List, Tuple
 from datetime import datetime, timedelta
 from fastapi import HTTPException, status
 from app.crud import inventory as crud_inventory
-from app.crud import fraud as crud_fraud
+# Lazy import to avoid circular dependency
+# from app.crud import fraud as crud_fraud
 # Add this import at the top
 from app.crud import reward as crud_reward
 def create_transaction(
@@ -54,8 +55,9 @@ def create_transaction(
     db.commit()
     db.refresh(db_transaction)
 
-    # RUN FRAUD DETECTION
+    # RUN FRAUD DETECTION (lazy import to avoid circular dependency)
     try:
+        from app.crud import fraud as crud_fraud
         fraud_alerts = crud_fraud.run_all_fraud_checks(
             db,
             shop_id,

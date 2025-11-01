@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'shop.dart';
+import 'services/api_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -11,11 +12,31 @@ class _LoginPageState extends State<LoginPage> {
   bool isLogin = true;
   bool _obscure = true;
   bool _obscureConfirm = true;
+  bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
   final _userController = TextEditingController();
   final _passController = TextEditingController();
-  final _nameController = TextEditingController();
+  final _nameController = TextEditingController(); // This will be shop_name
   final _confirmPassController = TextEditingController();
+  
+  // Additional controllers for registration
+  final _shopAddressController = TextEditingController();
+  final _contactController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _panController = TextEditingController();
+
+  @override
+  void dispose() {
+    _userController.dispose();
+    _passController.dispose();
+    _nameController.dispose();
+    _confirmPassController.dispose();
+    _shopAddressController.dispose();
+    _contactController.dispose();
+    _emailController.dispose();
+    _panController.dispose();
+    super.dispose();
+  }
 
   void _showDialog(String title, String message, {bool success = false}) {
     showDialog(
@@ -27,7 +48,7 @@ class _LoginPageState extends State<LoginPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
+            child: const Text("ठिक छ"),
           )
         ],
       ),
@@ -35,54 +56,89 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _onLogin() async {
-    if (_formKey.currentState!.validate()) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(
-          child: CircularProgressIndicator(color: Color(0xFF57C4DE)),
-        ),
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    
+    try {
+      final result = await ApiService.login(
+        identifier: _userController.text.trim(),
+        password: _passController.text,
       );
-      await Future.delayed(const Duration(seconds: 1));
-      if (mounted) Navigator.of(context).pop();
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => NepalShopApp()),
+      
+      if (result['success']) {
+        final shopkeeperData = result['data']['shopkeeper'];
+        _showDialog(
+          "सफल", 
+          'स्वागत छ, ${shopkeeperData['shop_name']}!',
+          success: true
         );
+        
+        // Navigate to shop page after a brief delay
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => NepalShopApp()),
+            );
+          }
+        });
+      } else {
+        _showDialog("लग इन असफल", result['error']);
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _onSignIn() async {
-    if (_formKey.currentState!.validate()) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(
-          child: CircularProgressIndicator(color: Color(0xFF57C4DE)),
-        ),
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    
+    try {
+      final result = await ApiService.register(
+        shopName: _nameController.text.trim(),
+        shopAddress: _shopAddressController.text.trim(),
+        contact: _contactController.text.trim(),
+        password: _passController.text,
+        email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+        pan: _panController.text.trim().isEmpty ? null : _panController.text.trim(),
       );
-      await Future.delayed(const Duration(seconds: 1));
-      if (mounted) Navigator.of(context).pop();
-      if (mounted) {
-        _showDialog("Sign Up Successful", "Welcome, ${_nameController.text}!", success: true);
-        // Optionally, clear fields
-        _userController.clear();
+      
+      if (result['success']) {
+        final shopkeeperData = result['data'];
+        _showDialog(
+          "सफल", 
+          'दर्ता सफल भयो! स्वागत छ ${shopkeeperData['shop_name']}!',
+          success: true
+        );
+        
+        // Clear fields and switch to login
+        _userController.text = _contactController.text; // Pre-fill login with contact
         _passController.clear();
         _nameController.clear();
         _confirmPassController.clear();
+        _shopAddressController.clear();
+        _contactController.clear();
+        _emailController.clear();
+        _panController.clear();
+        
         setState(() {
-          isLogin = true; // Switch back to login after successful sign up
+          isLogin = true; // Switch to login tab
         });
+      } else {
+        _showDialog("दर्ता असफल", result['error']);
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _onSocial(String name) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("$name login clicked!"),
+        content: Text("$name लग इन अहिले उपलब्ध छैन"),
         backgroundColor: Colors.blue,
       ),
     );
@@ -207,7 +263,7 @@ class _LoginPageState extends State<LoginPage> {
                                     padding: const EdgeInsets.symmetric(vertical: 14),
                                     child: Center(
                                       child: Text(
-                                        "Log In",
+                                        "लग इन",
                                         style: TextStyle(
                                           color: isLogin ? Colors.white : const Color(0xFF57C4DE),
                                           fontWeight: FontWeight.bold,
@@ -229,7 +285,7 @@ class _LoginPageState extends State<LoginPage> {
                                     padding: const EdgeInsets.symmetric(vertical: 14),
                                     child: Center(
                                       child: Text(
-                                        "Sign In",
+                                        "दर्ता गर्नुहोस्",
                                         style: TextStyle(
                                           color: !isLogin ? Colors.white : const Color(0xFF57C4DE),
                                           fontWeight: FontWeight.bold,
@@ -250,11 +306,11 @@ class _LoginPageState extends State<LoginPage> {
                           child: Column(
                             children: [
                               if (!isLogin) ...[
-                                // Name field for sign up
+                                // Shop Name field for sign up
                                 TextFormField(
                                   controller: _nameController,
                                   decoration: InputDecoration(
-                                    hintText: "Full Name",
+                                    hintText: "पसलको नाम",
                                     contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 22),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(28),
@@ -265,18 +321,112 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                   validator: (v) {
                                     if (!isLogin && (v == null || v.trim().length < 2)) {
-                                      return "Enter your name";
+                                      return "पसलको नाम लेख्नुहोस् (न्यूनतम २ अक्षर)";
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                // Shop Address field
+                                TextFormField(
+                                  controller: _shopAddressController,
+                                  decoration: InputDecoration(
+                                    hintText: "पसलको ठेगाना",
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 22),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(28),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    filled: true,
+                                    fillColor: const Color(0xFFF5FBFC),
+                                  ),
+                                  validator: (v) {
+                                    if (!isLogin && (v == null || v.trim().length < 5)) {
+                                      return "पसलको ठेगाना लेख्नुहोस् (न्यूनतम ५ अक्षर)";
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                // Contact field
+                                TextFormField(
+                                  controller: _contactController,
+                                  keyboardType: TextInputType.phone,
+                                  decoration: InputDecoration(
+                                    hintText: "सम्पर्क नम्बर (98xxxxxxxx वा 97xxxxxxxx)",
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 22),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(28),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    filled: true,
+                                    fillColor: const Color(0xFFF5FBFC),
+                                  ),
+                                  validator: (v) {
+                                    if (!isLogin) {
+                                      if (v == null || v.isEmpty) return "सम्पर्क नम्बर आवश्यक छ";
+                                      if (!RegExp(r'^(98|97)\d{8}$').hasMatch(v)) {
+                                        return "मान्य नेपाली मोबाइल नम्बर लेख्नुहोस् (98xxxxxxxx वा 97xxxxxxxx)";
+                                      }
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                // Email field (optional)
+                                TextFormField(
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  decoration: InputDecoration(
+                                    hintText: "इमेल (वैकल्पिक)",
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 22),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(28),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    filled: true,
+                                    fillColor: const Color(0xFFF5FBFC),
+                                  ),
+                                  validator: (v) {
+                                    if (!isLogin && v != null && v.isNotEmpty) {
+                                      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(v)) {
+                                        return "मान्य इमेल लेख्नुहोस्";
+                                      }
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                // PAN field (optional)
+                                TextFormField(
+                                  controller: _panController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: InputDecoration(
+                                    hintText: "प्यान नम्बर (वैकल्पिक, ९ अंक)",
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 22),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(28),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    filled: true,
+                                    fillColor: const Color(0xFFF5FBFC),
+                                  ),
+                                  validator: (v) {
+                                    if (!isLogin && v != null && v.isNotEmpty) {
+                                      if (!RegExp(r'^\d{9}$').hasMatch(v)) {
+                                        return "मान्य ९ अंकको प्यान नम्बर लेख्नुहोस्";
+                                      }
                                     }
                                     return null;
                                   },
                                 ),
                                 const SizedBox(height: 16),
                               ],
-                              // Username
+                              // Username/Email/Contact for login
                               TextFormField(
                                 controller: _userController,
                                 decoration: InputDecoration(
-                                  hintText: "Username or Email",
+                                  hintText: isLogin ? "इमेल वा सम्पर्क नम्बर" : "प्रयोगकर्ता नाम वा इमेल",
                                   contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 22),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(28),
@@ -285,7 +435,7 @@ class _LoginPageState extends State<LoginPage> {
                                   filled: true,
                                   fillColor: const Color(0xFFF5FBFC),
                                 ),
-                                validator: (v) => v == null || v.isEmpty ? "Required" : null,
+                                validator: (v) => v == null || v.isEmpty ? "आवश्यक" : null,
                               ),
                               const SizedBox(height: 16),
                               // Password
@@ -293,7 +443,7 @@ class _LoginPageState extends State<LoginPage> {
                                 controller: _passController,
                                 obscureText: _obscure,
                                 decoration: InputDecoration(
-                                  hintText: "Password",
+                                  hintText: "पासवर्ड",
                                   contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 22),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(28),
@@ -307,8 +457,8 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                 ),
                                 validator: (v) {
-                                  if (v == null || v.isEmpty) return "Required";
-                                  if (v.length < 6) return "Min 6 chars";
+                                  if (v == null || v.isEmpty) return "आवश्यक";
+                                  if (v.length < 6) return "न्यूनतम ६ अक्षर";
                                   return null;
                                 },
                               ),
@@ -319,7 +469,7 @@ class _LoginPageState extends State<LoginPage> {
                                   controller: _confirmPassController,
                                   obscureText: _obscureConfirm,
                                   decoration: InputDecoration(
-                                    hintText: "Confirm Password",
+                                    hintText: "पासवर्ड पुष्टि गर्नुहोस्",
                                     contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 22),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(28),
@@ -334,7 +484,7 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                   validator: (v) {
                                     if (!isLogin && v != _passController.text) {
-                                      return "Passwords do not match";
+                                      return "पासवर्ड मेल खाँदैन";
                                     }
                                     return null;
                                   },
@@ -345,15 +495,20 @@ class _LoginPageState extends State<LoginPage> {
                                 width: double.infinity,
                                 height: 50,
                                 child: ElevatedButton(
-                                  onPressed: isLogin ? _onLogin : _onSignIn,
+                                  onPressed: _isLoading ? null : (isLogin ? _onLogin : _onSignIn),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF57C4DE),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                                   ),
-                                  child: Text(
-                                    isLogin ? "Log In" : "Sign In",
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                  ),
+                                  child: _isLoading 
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      )
+                                    : Text(
+                                        isLogin ? "लग इन" : "दर्ता गर्नुहोस्",
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
+                                      ),
                                 ),
                               ),
                             ],
@@ -366,7 +521,7 @@ class _LoginPageState extends State<LoginPage> {
                             Container(height: 1, width: 32, color: Colors.grey[300]),
                             const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 8),
-                              child: Text("or", style: TextStyle(fontSize: 14, color: Colors.black54)),
+                              child: Text("वा", style: TextStyle(fontSize: 14, color: Colors.black54)),
                             ),
                             Container(height: 1, width: 32, color: Colors.grey[300]),
                           ],

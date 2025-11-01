@@ -372,3 +372,32 @@ def get_product_inventory(db: Session, shop_id: str, product_id: str) -> Optiona
             Inventory.product_id == product_id
         )
     ).first()
+
+def adjust_inventory(
+    db: Session,
+    shop_id: str,
+    product_id: str,
+    quantity_change: int,
+    notes: Optional[str] = None
+) -> Inventory:
+    """Simple wrapper to adjust inventory quantity"""
+    
+    inventory = get_or_create_inventory(db, shop_id, product_id)
+    
+    # Update quantity
+    inventory.current_quantity += quantity_change
+    
+    # Log movement
+    movement = InventoryMovement(
+        shop_id=shop_id,
+        product_id=product_id,
+        movement_type=MovementType.ADJUSTMENT,
+        quantity_change=quantity_change,
+        quantity_after=inventory.current_quantity,
+        notes=notes or "Inventory adjustment"
+    )
+    db.add(movement)
+    db.commit()
+    db.refresh(inventory)
+    
+    return inventory

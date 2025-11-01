@@ -16,6 +16,7 @@ class Product(Base):
     category = Column(String(100), nullable=True)
     price = Column(Float, nullable=False)
     unit = Column(String(50), nullable=True)  # "piece", "kg", "liter", etc.
+    quantity = Column(Integer, default=0, nullable=False)  # Current stock quantity (denormalized from inventory)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())

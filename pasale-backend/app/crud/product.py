@@ -16,20 +16,22 @@ def create_product(db: Session, product: ProductCreate, shop_id: str) -> Product
         product_name=product.product_name,
         category=product.category,
         price=product.price,
-        unit=product.unit
+        unit=product.unit,
+        quantity=product.quantity if hasattr(product, 'quantity') else 0
     )
     
     db.add(db_product)
     db.commit()
     db.refresh(db_product)
     
-    # Initialize inventory with opening stock
-    if hasattr(product, 'opening_stock'):
+    # Initialize inventory with opening stock (sync with quantity)
+    opening_stock = product.opening_stock if hasattr(product, 'opening_stock') else db_product.quantity
+    if opening_stock > 0 or hasattr(product, 'opening_stock'):
         crud_inventory.create_inventory_with_opening_stock(
             db,
             shop_id,
             str(db_product.product_id),
-            product.opening_stock,
+            opening_stock,
             product.reorder_level if hasattr(product, 'reorder_level') else 10
         )
     
@@ -96,6 +98,22 @@ def update_product(
     
     # Update only provided fields
     update_data = product_update.dict(exclude_unset=True)
+    
+    # If quantity is being updated, sync with inventory
+    if 'quantity' in update_data:
+        new_quantity = update_data['quantity']
+        old_quantity = db_product.quantity
+        quantity_change = new_quantity - old_quantity
+        
+        if quantity_change != 0:
+            # Update inventory to match
+            crud_inventory.adjust_inventory(
+                db,
+                shop_id,
+                product_id,
+                quantity_change,
+                notes=f"Manual adjustment via product update"
+            )
     
     for key, value in update_data.items():
         setattr(db_product, key, value)

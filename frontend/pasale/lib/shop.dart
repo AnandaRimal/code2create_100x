@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'dart:math';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import 'screens/dashboard_page.dart';
+import 'screens/profile_page.dart';
 
 void main() {
   runApp(NepalShopApp());
@@ -38,6 +41,28 @@ class Product {
     required this.unit,
     this.quantity = 0,
   });
+
+  // Convert Product to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'category': category,
+      'price': price,
+      'unit': unit,
+      'quantity': quantity,
+    };
+  }
+
+  // Create Product from JSON
+  factory Product.fromJson(Map<String, dynamic> json) {
+    return Product(
+      name: json['name'],
+      category: json['category'],
+      price: json['price'],
+      unit: json['unit'],
+      quantity: json['quantity'],
+    );
+  }
 }
 
 class SaleRecord {
@@ -54,6 +79,28 @@ class SaleRecord {
     required this.totalAmount,
     required this.type,
   });
+
+  // Convert SaleRecord to JSON (for saving to cache)
+  Map<String, dynamic> toJson() {
+    return {
+      'productName': productName,
+      'time': time.toIso8601String(),
+      'quantity': quantity,
+      'totalAmount': totalAmount,
+      'type': type,
+    };
+  }
+
+  // Create SaleRecord from JSON (for loading from cache)
+  factory SaleRecord.fromJson(Map<String, dynamic> json) {
+    return SaleRecord(
+      productName: json['productName'],
+      time: DateTime.parse(json['time']),
+      quantity: json['quantity'],
+      totalAmount: json['totalAmount'],
+      type: json['type'],
+    );
+  }
 }
 
 class ShopHomePage extends StatefulWidget {
@@ -174,6 +221,7 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
     _animationController.forward();
 
     _speech = stt.SpeechToText();
+    _loadSalesFromCache(); // Load saved sales records
   }
 
   // Helper to generate random quantity (between 5 and 28)
@@ -186,6 +234,48 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
     _animationController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  // Load sales from cache and restore product quantities
+  Future<void> _loadSalesFromCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? salesJson = prefs.getString('sales_records');
+    final String? productsJson = prefs.getString('products_quantities');
+    
+    setState(() {
+      // Load sales records
+      if (salesJson != null) {
+        final List<dynamic> decoded = jsonDecode(salesJson);
+        _sales.clear();
+        _sales.addAll(decoded.map((json) => SaleRecord.fromJson(json)).toList());
+      }
+      
+      // Load product quantities
+      if (productsJson != null) {
+        final Map<String, dynamic> quantities = jsonDecode(productsJson);
+        for (var product in _products) {
+          if (quantities.containsKey(product.name)) {
+            product.quantity = quantities[product.name];
+          }
+        }
+      }
+    });
+  }
+
+  // Save sales and product quantities to cache
+  Future<void> _saveSalesToCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Save sales records
+    final List<Map<String, dynamic>> salesJson = _sales.map((s) => s.toJson()).toList();
+    await prefs.setString('sales_records', jsonEncode(salesJson));
+    
+    // Save product quantities
+    final Map<String, int> quantities = {};
+    for (var product in _products) {
+      quantities[product.name] = product.quantity;
+    }
+    await prefs.setString('products_quantities', jsonEncode(quantities));
   }
 
   void _filterProducts() {
@@ -213,6 +303,7 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
         );
       }
     });
+    _saveSalesToCache(); // Save to cache after buying
     _showSnackBar('${product.name} किनियो! जम्मा: ${product.quantity}', Colors.green);
   }
 
@@ -231,6 +322,7 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
         );
       }
     });
+    _saveSalesToCache(); // Save to cache after selling
     _showSnackBar('${product.name} बेचियो! जम्मा: ${product.quantity}', Colors.orange);
   }
 
@@ -462,75 +554,10 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
   }
 
   void _showProfileDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Row(
-          children: [
-            Icon(Icons.person_rounded, color: Color(0xFF1E88E5)),
-            SizedBox(width: 10),
-            Text('प्रोफाइल', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 36,
-                backgroundColor: Color(0xFF1E88E5),
-                child: Icon(Icons.person, size: 48, color: Colors.white),
-              ),
-              SizedBox(height: 14),
-              Text('Ram Bahadur', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              SizedBox(height: 6),
-              Text('rambahadur@gmail.com', style: TextStyle(color: Colors.grey[700], fontSize: 14)),
-              SizedBox(height: 12),
-              Divider(),
-              ListTile(
-                leading: Icon(Icons.store, color: Color(0xFF43A047)),
-                title: Text('पसलको नाम:'),
-                subtitle: Text('सबित्रा किराना तथा चिया पसल'),
-              ),
-              ListTile(
-                leading: Icon(Icons.phone, color: Color(0xFF43A047)),
-                title: Text('फोन:'),
-                subtitle: Text('९८४५६७८९०१'),
-              ),
-              ListTile(
-                leading: Icon(Icons.location_on, color: Color(0xFF43A047)),
-                title: Text('ठेगाना:'),
-                subtitle: Text('काठमाडौं, नेपाल'),
-              ),
-              ListTile(
-                leading: Icon(Icons.category, color: Color(0xFF43A047)),
-                title: Text('पसलको प्रकार:'),
-                subtitle: Text('किराना'),
-              ),
-              ListTile(
-                leading: Icon(Icons.confirmation_number, color: Color(0xFF43A047)),
-                title: Text('पसल ID:'),
-                subtitle: Text('SHOP0125'),
-              ),
-              ListTile(
-                leading: Icon(Icons.sync, color: Color(0xFF43A047)),
-                title: Text('अन्तिम Sync:'),
-                subtitle: Text(
-                  '2025-06-23 8:15:00', // <-- Static date/time
-                  style: TextStyle(fontSize: 13),
-                ),
-              ),
-            ],
-          ),
-        
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('ठिक छ'),
-          ),
-        ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfilePage(sales: _sales),
       ),
     );
   }
@@ -946,35 +973,37 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text('नयाँ उत्पादन थप्नुहोस्'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(labelText: 'उत्पादन नाम'),
-              ),
-              SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: selectedCategory,
-                decoration: InputDecoration(labelText: 'कोटि'),
-                items: _categories
-                  .where((cat) => cat != 'सबै')
-                  .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
-                  .toList(),
-                onChanged: (value) => setState(() => selectedCategory = value!),
-              ),
-              SizedBox(height: 12),
-              TextField(
-                controller: priceController,
-                decoration: InputDecoration(labelText: 'मूल्य (रू)'),
-                keyboardType: TextInputType.number,
-              ),
-              SizedBox(height: 12),
-              TextField(
-                controller: unitController,
-                decoration: InputDecoration(labelText: 'इकाई (केजी, वटा, लिटर)'),
-              ),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(labelText: 'उत्पादन नाम'),
+                ),
+                SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: selectedCategory,
+                  decoration: InputDecoration(labelText: 'कोटि'),
+                  items: _categories
+                    .where((cat) => cat != 'सबै')
+                    .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
+                    .toList(),
+                  onChanged: (value) => setState(() => selectedCategory = value!),
+                ),
+                SizedBox(height: 12),
+                TextField(
+                  controller: priceController,
+                  decoration: InputDecoration(labelText: 'मूल्य (रू)'),
+                  keyboardType: TextInputType.number,
+                ),
+                SizedBox(height: 12),
+                TextField(
+                  controller: unitController,
+                  decoration: InputDecoration(labelText: 'इकाई (केजी, वटा, लिटर)'),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(

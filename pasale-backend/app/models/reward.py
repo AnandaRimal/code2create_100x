@@ -1,6 +1,6 @@
 # - SALE transaction: 2 points
 # - PURCHASE transaction: 1 point (to track supply chain)
-# - RETURN transaction: 0 points (neutral, but we still want to track)
+
 # - Bonus: 10 points for logging 10+ transactions in a day
 # - Bonus: 50 points for 7-day streak (at least 5 transactions daily)
 

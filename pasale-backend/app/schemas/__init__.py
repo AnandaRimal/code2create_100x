@@ -22,6 +22,15 @@ from app.schemas.transaction import (
     TransactionType
 )
 
+
+from app.schemas.reward import (
+    RewardResponse,
+    RewardListResponse,
+    RewardBalanceResponse,
+    RewardRedemptionRequest,
+    DailyRewardStats
+)
+
 __all__ = [
     "ShopkeeperCreate",
     "ShopkeeperLogin", 
@@ -39,5 +48,9 @@ __all__ = [
     "TransactionBulkCreate",
     "TransactionBulkCreateResponse",
     "TransactionStats",
-    "TransactionType"
+    "TransactionType","RewardResponse",
+    "RewardListResponse",
+    "RewardBalanceResponse",
+    "RewardRedemptionRequest",
+    "DailyRewardStats"
 ]

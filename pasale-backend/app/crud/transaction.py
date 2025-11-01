@@ -7,6 +7,8 @@ from typing import Optional, List, Tuple
 from datetime import datetime, timedelta
 from fastapi import HTTPException, status
 
+# Add this import at the top
+from app.crud import reward as crud_reward
 def create_transaction(
     db: Session, 
     transaction: TransactionCreate, 
@@ -51,6 +53,16 @@ def create_transaction(
     db.commit()
     db.refresh(db_transaction)
     
+    try:
+        crud_reward.award_transaction_points(
+            db,
+            shop_id,
+            str(db_transaction.transaction_id),
+            db_transaction.type
+        )
+    except Exception as e:
+        # Don't fail transaction if reward fails
+        print(f"Failed to award points: {e}")
     # TODO: Trigger reward calculation here
     # from app.crud.reward import calculate_and_award_points
     # calculate_and_award_points(db, shop_id, db_transaction)
@@ -231,6 +243,10 @@ def delete_transaction(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Transaction not found"
         )
+    try:
+        crud_reward.reverse_transaction_rewards(db, transaction_id)
+    except Exception as e:
+        print(f"Failed to reverse rewards: {e}")
     
     # TODO: Reverse rewards if any were given
     # from app.crud.reward import reverse_transaction_rewards

@@ -7,6 +7,7 @@ from typing import Optional, List, Tuple
 from datetime import datetime, timedelta
 from fastapi import HTTPException, status
 from app.crud import inventory as crud_inventory
+from app.crud import fraud as crud_fraud
 # Add this import at the top
 from app.crud import reward as crud_reward
 def create_transaction(
@@ -52,6 +53,23 @@ def create_transaction(
     db.add(db_transaction)
     db.commit()
     db.refresh(db_transaction)
+
+    # RUN FRAUD DETECTION
+    try:
+        fraud_alerts = crud_fraud.run_all_fraud_checks(
+            db,
+            shop_id,
+            str(db_transaction.transaction_id),
+            transaction.product_id,
+            transaction.quantity,
+            transaction.price,
+            db_transaction.date_time
+        )
+        
+        if fraud_alerts:
+            print(f"⚠️ FRAUD ALERT: {len(fraud_alerts)} alerts for transaction {db_transaction.transaction_id}")
+    except Exception as e:
+        print(f"Fraud detection failed: {e}")
     
    # Update inventory
     try:

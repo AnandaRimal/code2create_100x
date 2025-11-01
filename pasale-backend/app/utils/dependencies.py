@@ -17,6 +17,10 @@ def get_current_shopkeeper(
     token = credentials.credentials
     payload = verify_token(token)
     
+    # Debug: log token payload shape when troubleshooting type issues
+    # (temporary — remove once root cause is found)
+    print("DEBUG get_current_shopkeeper payload:", repr(payload))
+
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -25,6 +29,19 @@ def get_current_shopkeeper(
         )
     
     shop_id: str = payload.get("sub")
+    print("DEBUG extracted shop_id:", repr(shop_id), "type:", type(shop_id))
+
+    # Normalize shop_id: accept a few common shapes (string or dict containing id)
+    if not isinstance(shop_id, str):
+        # If payload used a nested structure, try common keys
+        if isinstance(shop_id, dict):
+            for k in ("shop_id", "id", "sub"):
+                if k in shop_id:
+                    shop_id = shop_id[k]
+                    break
+        # Coerce to string as a last resort
+        if not isinstance(shop_id, str):
+            shop_id = str(shop_id)
     if shop_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

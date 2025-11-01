@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import '../shop.dart';
+import '../models/product.dart';
 
 // CSV EXPORT FUNCTION
 Future<void> exportSalesToCsv(BuildContext context, List<SaleRecord> sales) async {
@@ -41,27 +41,27 @@ class DashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     int totalProducts = products.length;
-    int totalStock = products.fold(0, (sum, p) => sum + p.quantity);
-    double totalValue = products.fold(0.0, (sum, p) => sum + p.quantity * p.price);
+    int totalStock = products.fold<int>(0, (sum, p) => sum + p.quantity);
+    double totalValue = products.fold<double>(0.0, (sum, p) => sum + p.quantity * p.price);
 
     int salesTodayCount = sales.where((s) =>
       s.time.year == DateTime.now().year &&
       s.time.month == DateTime.now().month &&
       s.time.day == DateTime.now().day
-    ).fold(0, (sum, s) => sum + s.quantity);
+    ).fold<int>(0, (sum, s) => sum + s.quantity);
 
     double salesTodayAmount = sales.where((s) =>
       s.time.year == DateTime.now().year &&
       s.time.month == DateTime.now().month &&
       s.time.day == DateTime.now().day
-    ).fold(0.0, (sum, s) => sum + s.totalAmount);
+    ).fold<double>(0.0, (sum, s) => sum + s.totalAmount);
 
-    int totalSalesCount = sales.fold(0, (sum, s) => sum + s.quantity);
-    double totalSalesAmount = sales.fold(0.0, (sum, s) => sum + s.totalAmount);
+    int totalSalesCount = sales.fold<int>(0, (sum, s) => sum + s.quantity);
+    double totalSalesAmount = sales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
 
     Map<String, int> salesPerProduct = {
       for (var p in products)
-        p.name: sales.where((s) => s.productName == p.name).fold(0, (sum, s) => sum + s.quantity)
+        p.name: sales.where((s) => s.productName == p.name).fold<int>(0, (sum, s) => sum + s.quantity)
     };
 
     Map<String, int> salesTodayPerProduct = {
@@ -71,7 +71,7 @@ class DashboardPage extends StatelessWidget {
           s.time.year == DateTime.now().year &&
           s.time.month == DateTime.now().month &&
           s.time.day == DateTime.now().day
-        ).fold(0, (sum, s) => sum + s.quantity)
+        ).fold<int>(0, (sum, s) => sum + s.quantity)
     };
 
     return Scaffold(

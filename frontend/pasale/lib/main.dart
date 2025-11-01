@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'shop.dart';
 import 'login.dart';
 
 void main() {
@@ -7,6 +6,8 @@ void main() {
 }
 
 class MyRootApp extends StatelessWidget {
+  const MyRootApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

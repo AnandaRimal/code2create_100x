@@ -1,18 +1,49 @@
 import uuid
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, Column, String, Float, Boolean, TIMESTAMP, Integer, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.sql import func
 from sqlalchemy import text
 import random
 
-from app.database import engine
-from app.models.product import Product
-from app.models.shopkeeper import Shopkeeper
+# Database configuration
+DATABASE_URL = "mysql+pymysql://root:root@localhost/pasale_db"
 
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+class Shopkeeper(Base):
+    __tablename__ = "shopkeepers"
+    
+    shop_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    shop_name = Column(String(255), nullable=False)
+    shop_address = Column(String(255))
+    contact = Column(String(50), nullable=False)
+    email = Column(String(320), unique=True, nullable=True)
+    pan = Column(String(50), unique=True, nullable=True)
+    password = Column(String(128), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    last_sync = Column(TIMESTAMP(timezone=True), nullable=True)
+    
+    products = relationship("Product", back_populates="shopkeeper")
+
+class Product(Base):
+    __tablename__ = "products"
+    
+    product_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    shop_id = Column(String(36), ForeignKey("shopkeepers.shop_id", ondelete="CASCADE"), nullable=False)
+    product_name = Column(String(255), nullable=False)
+    category = Column(String(100), nullable=True)
+    price = Column(Float, nullable=False)
+    unit = Column(String(50), nullable=True)
+    quantity = Column(Integer, default=0, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    version = Column(Integer, default=1)
+    
+    shopkeeper = relationship("Shopkeeper", back_populates="products")
 
 def get_realistic_stock(unit, category):
     """Generate realistic stock quantities based on unit and category"""
@@ -150,9 +181,19 @@ def main():
         session.commit()
         print(f"Successfully inserted {len(products_data)} products!")
         
+        # Step 5: Display summary
+        total_products = session.query(Product).count()
+        print(f"\nTotal products in database: {total_products}")
+        
+        # Show categories
+        categories = session.query(Product.category).distinct().all()
+        print(f"Categories: {[cat[0] for cat in categories]}")
+        
     except Exception as e:
         session.rollback()
         print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
         session.close()
 

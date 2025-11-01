@@ -26,6 +26,14 @@ class _LoginPageState extends State<LoginPage> {
   final _panController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Pre-fill with test credentials for development
+    _userController.text = "9711111111";
+    _passController.text = "password123";
+  }
+
+  @override
   void dispose() {
     _userController.dispose();
     _passController.dispose();

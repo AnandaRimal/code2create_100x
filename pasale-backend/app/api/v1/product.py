@@ -28,10 +28,23 @@ def create_product(
     )
     return db_product
 
+# IMPORTANT: More specific routes (with paths) should come BEFORE generic ones
+@router.get("/categories", response_model=list[str])
+def list_categories(
+    current_shopkeeper: Shopkeeper = Depends(get_current_shopkeeper),
+    db: Session = Depends(get_db)
+):
+    """Get all categories used by current shop"""
+    categories = crud_product.get_categories_by_shop(
+        db,
+        str(current_shopkeeper.shop_id)
+    )
+    return categories
+
 @router.get("/", response_model=ProductListResponse)
 def list_products(
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=100),
+    page_size: int = Query(50, ge=1, le=1000),  # Increased limit to 1000
     search: Optional[str] = Query(None, max_length=100),
     category: Optional[str] = Query(None, max_length=100),
     include_inactive: bool = Query(False),
@@ -58,18 +71,6 @@ def list_products(
         "page_size": page_size,
         "products": products
     }
-
-@router.get("/categories", response_model=list[str])
-def list_categories(
-    current_shopkeeper: Shopkeeper = Depends(get_current_shopkeeper),
-    db: Session = Depends(get_db)
-):
-    """Get all categories used by current shop"""
-    categories = crud_product.get_categories_by_shop(
-        db,
-        str(current_shopkeeper.shop_id)
-    )
-    return categories
 
 @router.get("/{product_id}", response_model=ProductResponse)
 def get_product(

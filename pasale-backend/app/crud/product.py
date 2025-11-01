@@ -4,7 +4,10 @@ from app.models.product import Product
 from app.schemas.product import ProductCreate, ProductUpdate
 from typing import Optional, List
 from fastapi import HTTPException, status
+# Add this import at the top
+from app.crud import inventory as crud_inventory
 
+# Update create_product function
 def create_product(db: Session, product: ProductCreate, shop_id: str) -> Product:
     """Create new product for a shop"""
     
@@ -19,6 +22,17 @@ def create_product(db: Session, product: ProductCreate, shop_id: str) -> Product
     db.add(db_product)
     db.commit()
     db.refresh(db_product)
+    
+    # Initialize inventory with opening stock
+    if hasattr(product, 'opening_stock'):
+        crud_inventory.create_inventory_with_opening_stock(
+            db,
+            shop_id,
+            str(db_product.product_id),
+            product.opening_stock,
+            product.reorder_level if hasattr(product, 'reorder_level') else 10
+        )
+    
     return db_product
 
 def get_product_by_id(db: Session, product_id: str, shop_id: str) -> Optional[Product]:

@@ -30,6 +30,15 @@ from app.schemas.reward import (
     RewardRedemptionRequest,
     DailyRewardStats
 )
+from app.schemas.inventory import (
+    InventoryResponse,
+    InventoryListResponse,
+    InventoryAdjustment,
+    ReorderLevelUpdate,
+    InventoryMovementResponse,
+    InventoryMovementListResponse,
+    StockAlert
+)
 
 __all__ = [
     "ShopkeeperCreate",
@@ -52,5 +61,12 @@ __all__ = [
     "RewardListResponse",
     "RewardBalanceResponse",
     "RewardRedemptionRequest",
-    "DailyRewardStats"
+    "DailyRewardStats",
+    "InventoryResponse",
+    "InventoryListResponse",
+    "InventoryAdjustment",
+    "ReorderLevelUpdate",
+    "InventoryMovementResponse",
+    "InventoryMovementListResponse",
+    "StockAlert"
 ]

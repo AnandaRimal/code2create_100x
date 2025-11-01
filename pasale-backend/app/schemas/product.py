@@ -32,7 +32,8 @@ class ProductBase(BaseModel):
 
 # For creating product
 class ProductCreate(ProductBase):
-    pass
+    opening_stock: Optional[int] = Field(default=0, ge=0)
+    reorder_level: Optional[int] = Field(default=10, ge=0)
 
 # For updating product (all fields optional)
 class ProductUpdate(BaseModel):
@@ -57,6 +58,9 @@ class ProductResponse(ProductBase):
     updated_at: datetime
     version: int
     is_active: bool
+    current_stock: Optional[int] = None  # Will be populated from inventory
+    reorder_level: Optional[int] = None
+    stock_value: Optional[float] = None  # current_stock * price
     
     class Config:
         from_attributes = True
@@ -67,3 +71,5 @@ class ProductListResponse(BaseModel):
     page: int
     page_size: int
     products: list[ProductResponse]
+
+    

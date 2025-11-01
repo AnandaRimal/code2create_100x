@@ -6,7 +6,7 @@ from app.schemas.transaction import TransactionCreate, TransactionUpdate
 from typing import Optional, List, Tuple
 from datetime import datetime, timedelta
 from fastapi import HTTPException, status
-
+from app.crud import inventory as crud_inventory
 # Add this import at the top
 from app.crud import reward as crud_reward
 def create_transaction(
@@ -53,6 +53,20 @@ def create_transaction(
     db.commit()
     db.refresh(db_transaction)
     
+   # Update inventory
+    try:
+        crud_inventory.update_inventory_from_transaction(
+            db,
+            shop_id,
+            transaction.product_id,
+            str(db_transaction.transaction_id),
+            db_transaction.type,
+            transaction.quantity
+        )
+    except Exception as e:
+        print(f"Failed to update inventory: {e}")
+    
+    # Award points for transaction
     try:
         crud_reward.award_transaction_points(
             db,
@@ -61,7 +75,6 @@ def create_transaction(
             db_transaction.type
         )
     except Exception as e:
-        # Don't fail transaction if reward fails
         print(f"Failed to award points: {e}")
     # TODO: Trigger reward calculation here
     # from app.crud.reward import calculate_and_award_points
@@ -243,6 +256,16 @@ def delete_transaction(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Transaction not found"
         )
+    # Reverse inventory changes
+    try:
+        crud_inventory.reverse_inventory_from_transaction(
+            db,
+            shop_id,
+            str(db_transaction.product_id),
+            transaction_id
+        )
+    except Exception as e:
+        print(f"Failed to reverse inventory: {e}")
     try:
         crud_reward.reverse_transaction_rewards(db, transaction_id)
     except Exception as e:

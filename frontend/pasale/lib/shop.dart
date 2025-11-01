@@ -32,6 +32,7 @@ class Product {
   final String category; // This will match filter section
   final double price;
   final String unit;
+  final String imageUrl;
   int quantity;
 
   Product({
@@ -39,6 +40,7 @@ class Product {
     required this.category,
     required this.price,
     required this.unit,
+    this.imageUrl = '',
     this.quantity = 0,
   });
 
@@ -50,6 +52,7 @@ class Product {
       'price': price,
       'unit': unit,
       'quantity': quantity,
+      'imageUrl': imageUrl,
     };
   }
 
@@ -61,6 +64,7 @@ class Product {
       price: json['price'],
       unit: json['unit'],
       quantity: json['quantity'],
+      imageUrl: json['imageUrl'] ?? '',
     );
   }
 }
@@ -131,6 +135,9 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
 
   final List<SaleRecord> _sales = [];
 
+  // Map to track quantity counter for each product (for +/- buttons)
+  final Map<String, int> _productQuantityCounters = {};
+
   // Voice recognition fields
   late stt.SpeechToText _speech;
   bool _isListening = false;
@@ -145,71 +152,71 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
     // List of all products with random quantity for demo
     _products = [
   // खानेकुरा
-  Product(name: 'बास्मती चामल', category: 'खानेकुरा', price: 180, unit: 'केजी', quantity: _rand()),
-  Product(name: 'दाल', category: 'खानेकुरा', price: 150, unit: 'केजी', quantity: _rand()),
-  Product(name: 'तोरीको तेल', category: 'खानेकुरा', price: 320, unit: 'लिटर', quantity: _rand()),
-  Product(name: 'नुन', category: 'खानेकुरा', price: 20, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'चिनी', category: 'खानेकुरा', price: 100, unit: 'केजी', quantity: _rand()),
-  Product(name: 'पीठो', category: 'खानेकुरा', price: 85, unit: 'केजी', quantity: _rand()),
-  Product(name: 'गुन्द्रुक', category: 'खानेकुरा', price: 95, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'गहुँ', category: 'खानेकुरा', price: 90, unit: 'केजी', quantity: _rand()),
-  Product(name: 'मकै', category: 'खानेकुरा', price: 80, unit: 'केजी', quantity: _rand()),
-  Product(name: 'कोदो', category: 'खानेकुरा', price: 100, unit: 'केजी', quantity: _rand()),
+  Product(name: 'बास्मती चामल', category: 'खानेकुरा', price: 180, unit: 'केजी', imageUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200', quantity: _rand()),
+  Product(name: 'दाल', category: 'खानेकुरा', price: 150, unit: 'केजी', imageUrl: 'https://images.unsplash.com/photo-1596040033229-a0b44cdfdb1c?w=200', quantity: _rand()),
+  Product(name: 'तोरीको तेल', category: 'खानेकुरा', price: 320, unit: 'लिटर', imageUrl: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=200', quantity: _rand()),
+  Product(name: 'नुन', category: 'खानेकुरा', price: 20, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1598867299401-f88a3f7dfe78?w=200', quantity: _rand()),
+  Product(name: 'चिनी', category: 'खानेकुरा', price: 100, unit: 'केजी', imageUrl: 'https://images.unsplash.com/photo-1582654165286-8397973a7e3c?w=200', quantity: _rand()),
+  Product(name: 'पीठो', category: 'खानेकुरा', price: 85, unit: 'केजी', imageUrl: 'https://images.unsplash.com/photo-1628864269543-d950a1f08160?w=200', quantity: _rand()),
+  Product(name: 'गुन्द्रुक', category: 'खानेकुरा', price: 95, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=200', quantity: _rand()),
+  Product(name: 'गहुँ', category: 'खानेकुरा', price: 90, unit: 'केजी', imageUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=200', quantity: _rand()),
+  Product(name: 'मकै', category: 'खानेकुरा', price: 80, unit: 'केजी', imageUrl: 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=200', quantity: _rand()),
+  Product(name: 'कोदो', category: 'खानेकुरा', price: 100, unit: 'केजी', imageUrl: 'https://images.unsplash.com/photo-1560493676-04071c5f467b?w=200', quantity: _rand()),
 
   // मसला
-  Product(name: 'जीरा', category: 'मसला', price: 200, unit: 'केजी', quantity: _rand()),
-  Product(name: 'गरम मसला', category: 'मसला', price: 120, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'हल्दी पाउडर', category: 'मसला', price: 90, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'धनियाँ पाउडर', category: 'मसला', price: 80, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'अदुवा पाउडर', category: 'मसला', price: 100, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'लसुन पाउडर', category: 'मसला', price: 110, unit: 'प्याकेट', quantity: _rand()),
+  Product(name: 'जीरा', category: 'मसला', price: 200, unit: 'केजी', imageUrl: 'https://images.unsplash.com/photo-1596040033229-a0b44cdfdb1c?w=200', quantity: _rand()),
+  Product(name: 'गरम मसला', category: 'मसला', price: 120, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1599909595787-9fcd68dc4f7c?w=200', quantity: _rand()),
+  Product(name: 'हल्दी पाउडर', category: 'मसला', price: 90, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1615485736743-e73a4c5f8e0c?w=200', quantity: _rand()),
+  Product(name: 'धनियाँ पाउडर', category: 'मसला', price: 80, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1596040033229-a0b44cdfdb1c?w=200', quantity: _rand()),
+  Product(name: 'अदुवा पाउडर', category: 'मसला', price: 100, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1577003833154-a7e3ea2c9f87?w=200', quantity: _rand()),
+  Product(name: 'लसुन पाउडर', category: 'मसला', price: 110, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1588776814546-daab30f310ce?w=200', quantity: _rand()),
 
   // नास्ता / स्न्याक्स
-  Product(name: 'चाउचाउ', category: 'नास्ता / स्न्याक्स', price: 25, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'कुरकुरे', category: 'नास्ता / स्न्याक्स', price: 20, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'बिस्कुट', category: 'नास्ता / स्न्याक्स', price: 30, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'पापड', category: 'नास्ता / स्न्याक्स', price: 15, unit: 'पिस', quantity: _rand()),
-  Product(name: 'सेल रोटी मिक्स', category: 'नास्ता / स्न्याक्स', price: 125, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'भुजा', category: 'नास्ता / स्न्याक्स', price: 40, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'मकै भुटेको', category: 'नास्ता / स्न्याक्स', price: 30, unit: 'प्याकेट', quantity: _rand()),
+  Product(name: 'चाउचाउ', category: 'नास्ता / स्न्याक्स', price: 25, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=200', quantity: _rand()),
+  Product(name: 'कुरकुरे', category: 'नास्ता / स्न्याक्स', price: 20, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1621447504864-d8686e12698c?w=200', quantity: _rand()),
+  Product(name: 'बिस्कुट', category: 'नास्ता / स्न्याक्स', price: 30, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=200', quantity: _rand()),
+  Product(name: 'पापड', category: 'नास्ता / स्न्याक्स', price: 15, unit: 'पिस', imageUrl: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=200', quantity: _rand()),
+  Product(name: 'सेल रोटी मिक्स', category: 'नास्ता / स्न्याक्स', price: 125, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200', quantity: _rand()),
+  Product(name: 'भुजा', category: 'नास्ता / स्न्याक्स', price: 40, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=200', quantity: _rand()),
+  Product(name: 'मकै भुटेको', category: 'नास्ता / स्न्याक्स', price: 30, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?w=200', quantity: _rand()),
 
   // पेय पदार्थ
-  Product(name: 'कोकाकोला', category: 'पेय पदार्थ', price: 60, unit: 'बोतल', quantity: _rand()),
-  Product(name: 'फ्रूटी', category: 'पेय पदार्थ', price: 25, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'रियल ज्यूस', category: 'पेय पदार्थ', price: 90, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'मिनरल वाटर', category: 'पेय पदार्थ', price: 20, unit: 'बोतल', quantity: _rand()),
-  Product(name: 'नेपाली चिया', category: 'पेय पदार्थ', price: 45, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'इन्स्टेन्ट कफी', category: 'पेय पदार्थ', price: 120, unit: 'प्याकेट', quantity: _rand()),
+  Product(name: 'कोकाकोला', category: 'पेय पदार्थ', price: 60, unit: 'बोतल', imageUrl: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=200', quantity: _rand()),
+  Product(name: 'फ्रूटी', category: 'पेय पदार्थ', price: 25, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=200', quantity: _rand()),
+  Product(name: 'रियल ज्यूस', category: 'पेय पदार्थ', price: 90, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=200', quantity: _rand()),
+  Product(name: 'मिनरल वाटर', category: 'पेय पदार्थ', price: 20, unit: 'बोतल', imageUrl: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=200', quantity: _rand()),
+  Product(name: 'नेपाली चिया', category: 'पेय पदार्थ', price: 45, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=200', quantity: _rand()),
+  Product(name: 'इन्स्टेन्ट कफी', category: 'पेय पदार्थ', price: 120, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200', quantity: _rand()),
 
   // घरेलु सामान
-  Product(name: 'मह', category: 'घरेलु सामान', price: 850, unit: 'बोतल', quantity: _rand()),
-  Product(name: 'अचार', category: 'घरेलु सामान', price: 280, unit: 'बोतल', quantity: _rand()),
-  Product(name: 'घ्यु', category: 'घरेलु सामान', price: 1200, unit: 'लिटर', quantity: _rand()),
-  Product(name: 'सावुन', category: 'घरेलु सामान', price: 25, unit: 'पिस', quantity: _rand()),
-  Product(name: 'टुथपेस्ट', category: 'घरेलु सामान', price: 90, unit: 'वटा', quantity: _rand()),
-  Product(name: 'ब्रस', category: 'घरेलु सामान', price: 40, unit: 'वटा', quantity: _rand()),
-  Product(name: 'डिटर्जेन्ट पाउडर', category: 'घरेलु सामान', price: 90, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'डिटर्जेन्ट बार', category: 'घरेलु सामान', price: 25, unit: 'पिस', quantity: _rand()),
-  Product(name: 'फिनाइल', category: 'घरेलु सामान', price: 100, unit: 'बोतल', quantity: _rand()),
-  Product(name: 'झाडु', category: 'घरेलु सामान', price: 80, unit: 'वटा', quantity: _rand()),
+  Product(name: 'मह', category: 'घरेलु सामान', price: 850, unit: 'बोतल', imageUrl: 'https://images.unsplash.com/photo-1587049352846-4a222e784587?w=200', quantity: _rand()),
+  Product(name: 'अचार', category: 'घरेलु सामान', price: 280, unit: 'बोतल', imageUrl: 'https://images.unsplash.com/photo-1589621316382-008455b857cd?w=200', quantity: _rand()),
+  Product(name: 'घ्यु', category: 'घरेलु सामान', price: 1200, unit: 'लिटर', imageUrl: 'https://images.unsplash.com/photo-1628863353691-0071c8c1874c?w=200', quantity: _rand()),
+  Product(name: 'सावुन', category: 'घरेलु सामान', price: 25, unit: 'पिस', imageUrl: 'https://images.unsplash.com/photo-1585128792103-e8c7468f723f?w=200', quantity: _rand()),
+  Product(name: 'टुथपेस्ट', category: 'घरेलु सामान', price: 90, unit: 'वटा', imageUrl: 'https://images.unsplash.com/photo-1622372738946-62e02505feb3?w=200', quantity: _rand()),
+  Product(name: 'ब्रस', category: 'घरेलु सामान', price: 40, unit: 'वटा', imageUrl: 'https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=200', quantity: _rand()),
+  Product(name: 'डिटर्जेन्ट पाउडर', category: 'घरेलु सामान', price: 90, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1603899122634-f086ca5f5ddd?w=200', quantity: _rand()),
+  Product(name: 'डिटर्जेन्ट बार', category: 'घरेलु सामान', price: 25, unit: 'पिस', imageUrl: 'https://images.unsplash.com/photo-1585128792103-e8c7468f723f?w=200', quantity: _rand()),
+  Product(name: 'फिनाइल', category: 'घरेलु सामान', price: 100, unit: 'बोतल', imageUrl: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=200', quantity: _rand()),
+  Product(name: 'झाडु', category: 'घरेलु सामान', price: 80, unit: 'वटा', imageUrl: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?w=200', quantity: _rand()),
 
   // खाना पकाउने सामग्री
-  Product(name: 'ग्यास सिलिन्डर', category: 'खाना पकाउने सामग्री', price: 1800, unit: 'वटा', quantity: _rand()),
-  Product(name: 'कुकर', category: 'खाना पकाउने सामग्री', price: 1200, unit: 'वटा', quantity: _rand()),
-  Product(name: 'भाँडा माझ्ने साबुन', category: 'खाना पकाउने सामग्री', price: 25, unit: 'पिस', quantity: _rand()),
-  Product(name: 'भाँडा माझ्ने लिक्विड', category: 'खाना पकाउने सामग्री', price: 120, unit: 'बोतल', quantity: _rand()),
+  Product(name: 'ग्यास सिलिन्डर', category: 'खाना पकाउने सामग्री', price: 1800, unit: 'वटा', imageUrl: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=200', quantity: _rand()),
+  Product(name: 'कुकर', category: 'खाना पकाउने सामग्री', price: 1200, unit: 'वटा', imageUrl: 'https://images.unsplash.com/photo-1584990347449-39b4aa090603?w=200', quantity: _rand()),
+  Product(name: 'भाँडा माझ्ने साबुन', category: 'खाना पकाउने सामग्री', price: 25, unit: 'पिस', imageUrl: 'https://images.unsplash.com/photo-1585128792103-e8c7468f723f?w=200', quantity: _rand()),
+  Product(name: 'भाँडा माझ्ने लिक्विड', category: 'खाना पकाउने सामग्री', price: 120, unit: 'बोतल', imageUrl: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=200', quantity: _rand()),
 
   // बच्चाको सामग्री
-  Product(name: 'पाम्पर्स', category: 'बच्चाको सामग्री', price: 300, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'बेबी लोसन', category: 'बच्चाको सामग्री', price: 250, unit: 'बोतल', quantity: _rand()),
-  Product(name: 'बेबी पाउडर', category: 'बच्चाको सामग्री', price: 180, unit: 'बोतल', quantity: _rand()),
-  Product(name: 'बेबी साबुन', category: 'बच्चाको सामग्री', price: 60, unit: 'पिस', quantity: _rand()),
+  Product(name: 'पाम्पर्स', category: 'बच्चाको सामग्री', price: 300, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=200', quantity: _rand()),
+  Product(name: 'बेबी लोसन', category: 'बच्चाको सामग्री', price: 250, unit: 'बोतल', imageUrl: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=200', quantity: _rand()),
+  Product(name: 'बेबी पाउडर', category: 'बच्चाको सामग्री', price: 180, unit: 'बोतल', imageUrl: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=200', quantity: _rand()),
+  Product(name: 'बेबी साबुन', category: 'बच्चाको सामग्री', price: 60, unit: 'पिस', imageUrl: 'https://images.unsplash.com/photo-1585128792103-e8c7468f723f?w=200', quantity: _rand()),
 
   // अन्य
-  Product(name: 'मोमबत्ती', category: 'अन्य', price: 20, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'म्याचिस', category: 'अन्य', price: 5, unit: 'प्याकेट', quantity: _rand()),
-  Product(name: 'प्लास्टिक झोला', category: 'अन्य', price: 10, unit: 'पिस', quantity: _rand()),
-  Product(name: 'अल्मुनियम फोइल', category: 'अन्य', price: 90, unit: 'रोल', quantity: _rand()),
+  Product(name: 'मोमबत्ती', category: 'अन्य', price: 20, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1602874801006-47c1c698b8e6?w=200', quantity: _rand()),
+  Product(name: 'म्याचिस', category: 'अन्य', price: 5, unit: 'प्याकेट', imageUrl: 'https://images.unsplash.com/photo-1523821741446-edb2b68bb7a0?w=200', quantity: _rand()),
+  Product(name: 'प्लास्टिक झोला', category: 'अन्य', price: 10, unit: 'पिस', imageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=200', quantity: _rand()),
+  Product(name: 'अल्मुनियम फोइल', category: 'अन्य', price: 90, unit: 'रोल', imageUrl: 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=200', quantity: _rand()),
 ];
 
     _filteredProducts = _products;
@@ -288,42 +295,42 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
     });
   }
 
-  void _buyProduct(Product product) {
+  void _buyProduct(Product product, [int quantity = 1]) {
     setState(() {
-      if (product.quantity < 20) {
-        product.quantity++;
+      if (product.quantity < 50) {
+        product.quantity += quantity;
         _sales.add(
           SaleRecord(
             productName: product.name,
             time: DateTime.now(),
-            quantity: 1,
-            totalAmount: product.price,
+            quantity: quantity,
+            totalAmount: product.price * quantity,
             type: 'buy',
           ),
         );
       }
     });
     _saveSalesToCache(); // Save to cache after buying
-    _showSnackBar('${product.name} किनियो! जम्मा: ${product.quantity}', Colors.green);
+    _showSnackBar('${product.name} किनियो! मात्रा: $quantity, जम्मा स्टक: ${product.quantity}', Colors.green);
   }
 
-  void _sellProduct(Product product) {
+  void _sellProduct(Product product, [int quantity = 1]) {
     setState(() {
-      if (product.quantity > 0) {
-        product.quantity--;
+      if (product.quantity >= quantity) {
+        product.quantity -= quantity;
         _sales.add(
           SaleRecord(
             productName: product.name,
             time: DateTime.now(),
-            quantity: 1,
-            totalAmount: product.price,
+            quantity: quantity,
+            totalAmount: product.price * quantity,
             type: 'sell',
           ),
         );
       }
     });
     _saveSalesToCache(); // Save to cache after selling
-    _showSnackBar('${product.name} बेचियो! जम्मा: ${product.quantity}', Colors.orange);
+    _showSnackBar('${product.name} बेचियो! मात्रा: $quantity, जम्मा स्टक: ${product.quantity}', Colors.orange);
   }
 
   void _showSnackBar(String message, Color color) {
@@ -617,9 +624,26 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
     return Scaffold(
       backgroundColor: Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: Text(
-          'पसले',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        title: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(
+                'lib/img/logo.jpeg',
+                height: 40,
+                width: 40,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(Icons.store, color: Colors.white, size: 40);
+                },
+              ),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'पसले',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+          ],
         ),
         backgroundColor: Color(0xFF1E88E5),
         elevation: 8,
@@ -670,6 +694,17 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
                         decoration: InputDecoration(
                           hintText: 'उत्पादन खोज्नुहोस्...',
                           prefixIcon: Icon(Icons.search, color: Color(0xFF1E88E5)),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(Icons.clear, color: Colors.grey),
+                                  onPressed: () {
+                                    setState(() {
+                                      _searchController.clear();
+                                      _filterProducts();
+                                    });
+                                  },
+                                )
+                              : null,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(25),
                             borderSide: BorderSide.none,
@@ -748,16 +783,48 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
                                   Row(
                                     children: [
                                       Container(
-                                        padding: EdgeInsets.all(8),
+                                        padding: EdgeInsets.all(12),
                                         decoration: BoxDecoration(
                                           color: _getCategoryColor(product.category).withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
-                                        child: Icon(
-                                          _getCategoryIcon(product.category),
-                                          color: _getCategoryColor(product.category),
-                                          size: 24,
-                                        ),
+                                        child: product.imageUrl.isNotEmpty
+                                            ? ClipRRect(
+                                                borderRadius: BorderRadius.circular(8),
+                                                child: Image.network(
+                                                  product.imageUrl,
+                                                  width: 40,
+                                                  height: 40,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error, stackTrace) {
+                                                    return Icon(
+                                                      _getCategoryIcon(product.category),
+                                                      color: _getCategoryColor(product.category),
+                                                      size: 32,
+                                                    );
+                                                  },
+                                                  loadingBuilder: (context, child, loadingProgress) {
+                                                    if (loadingProgress == null) return child;
+                                                    return SizedBox(
+                                                      width: 40,
+                                                      height: 40,
+                                                      child: Center(
+                                                        child: CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                          valueColor: AlwaysStoppedAnimation<Color>(
+                                                            _getCategoryColor(product.category),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              )
+                                            : Icon(
+                                                _getCategoryIcon(product.category),
+                                                color: _getCategoryColor(product.category),
+                                                size: 32,
+                                              ),
                                       ),
                                       SizedBox(width: 12),
                                       Expanded(
@@ -824,48 +891,119 @@ class _ShopHomePageState extends State<ShopHomePage> with TickerProviderStateMix
                                           ),
                                         ],
                                       ),
-                                      Row(
+                                      Column(
                                         children: [
-                                          ElevatedButton(
-                                            onPressed: () => _buyProduct(product),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.red,
-                                              foregroundColor: Colors.white,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(20),
-                                              ),
-                                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                              elevation: 3,
+                                          // Quantity selector with +/- buttons
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[200],
+                                              borderRadius: BorderRadius.circular(20),
                                             ),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                Icon(Icons.add_shopping_cart, size: 16),
-                                                SizedBox(width: 4),
-                                                Text('किनियो', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                                                IconButton(
+                                                  icon: Icon(Icons.remove, size: 20),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      int current = _productQuantityCounters[product.name] ?? 1;
+                                                      if (current > 1) {
+                                                        _productQuantityCounters[product.name] = current - 1;
+                                                      }
+                                                    });
+                                                  },
+                                                  padding: EdgeInsets.all(4),
+                                                  constraints: BoxConstraints(),
+                                                ),
+                                                Container(
+                                                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Text(
+                                                    '${_productQuantityCounters[product.name] ?? 1}',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                ),
+                                                IconButton(
+                                                  icon: Icon(Icons.add, size: 20),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      int current = _productQuantityCounters[product.name] ?? 1;
+                                                      if (current < 5) {
+                                                        _productQuantityCounters[product.name] = current + 1;
+                                                      }
+                                                    });
+                                                  },
+                                                  padding: EdgeInsets.all(4),
+                                                  constraints: BoxConstraints(),
+                                                ),
                                               ],
                                             ),
                                           ),
-                                          SizedBox(width: 8),
-                                          ElevatedButton(
-                                            onPressed: product.quantity > 0 ? () => _sellProduct(product) : null,
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.green,
-                                              foregroundColor: Colors.white,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(20),
+                                          SizedBox(height: 8),
+                                          // Buy and Sell buttons
+                                          Row(
+                                            children: [
+                                              ElevatedButton(
+                                                onPressed: () {
+                                                  int qty = _productQuantityCounters[product.name] ?? 1;
+                                                  _buyProduct(product, qty);
+                                                  setState(() {
+                                                    _productQuantityCounters[product.name] = 1; // Reset to 1
+                                                  });
+                                                },
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.red,
+                                                  foregroundColor: Colors.white,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(20),
+                                                  ),
+                                                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                  elevation: 3,
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.add_shopping_cart, size: 16),
+                                                    SizedBox(width: 4),
+                                                    Text('किनियो', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                                                  ],
+                                                ),
                                               ),
-                                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                              elevation: 3,
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(Icons.sell, size: 16),
-                                                SizedBox(width: 4),
-                                                Text('बेचियो', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                                              ],
-                                            ),
+                                              SizedBox(width: 8),
+                                              ElevatedButton(
+                                                onPressed: product.quantity > 0 ? () {
+                                                  int qty = _productQuantityCounters[product.name] ?? 1;
+                                                  _sellProduct(product, qty);
+                                                  setState(() {
+                                                    _productQuantityCounters[product.name] = 1; // Reset to 1
+                                                  });
+                                                } : null,
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.green,
+                                                  foregroundColor: Colors.white,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(20),
+                                                  ),
+                                                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                  elevation: 3,
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.sell, size: 16),
+                                                    SizedBox(width: 4),
+                                                    Text('बेचियो', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ],
                                       ),
